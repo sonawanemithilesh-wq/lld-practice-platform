@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+*.local
+data/*.db
+data/*.db*
+**/data/*.db
+**/data/*.db*
+**/.env
+**/.env.local
