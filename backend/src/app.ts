@@ -14,12 +14,16 @@ import { ProblemController } from './controllers/ProblemController.js';
 import { SubmissionController } from './controllers/SubmissionController.js';
 import { createProblemRoutes } from './routes/problemRoutes.js';
 import { createSubmissionRoutes } from './routes/submissionRoutes.js';
+import { LabService } from './services/LabService.js';
+import { LabController } from './controllers/LabController.js';
+import { createLabRoutes } from './routes/labRoutes.js';
 
 dotenv.config();
 
 export interface AppDependencies {
   db?: Database.Database;
   evaluator?: IEvaluator;
+  labService?: LabService;
 }
 
 export function createApp(deps?: AppDependencies): Express {
@@ -47,6 +51,8 @@ export function createApp(deps?: AppDependencies): Express {
 
   const problemController = new ProblemController(problemRepo, submissionRepo);
   const submissionController = new SubmissionController(submissionRepo, evaluationService);
+  const labService = deps?.labService || new LabService();
+  const labController = new LabController(labService);
 
   // Health check
   app.get('/api/health', (req, res) => {
@@ -56,6 +62,7 @@ export function createApp(deps?: AppDependencies): Express {
   // Mount API routers
   app.use('/api/problems', createProblemRoutes(problemController));
   app.use('/api/submissions', createSubmissionRoutes(submissionController));
+  app.use('/api/labs', createLabRoutes(labController));
 
   return app;
 }

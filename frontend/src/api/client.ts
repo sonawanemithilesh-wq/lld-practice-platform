@@ -1,4 +1,4 @@
-import { Problem, Submission, SubmissionFormat } from '../types';
+import { Problem, Submission, SubmissionFormat, Lab, LabValidationResult } from '../types';
 
 const API_BASE = '/api';
 
@@ -55,4 +55,58 @@ export async function fetchSubmission(submissionId: string): Promise<Submission>
   }
   const json = await res.json();
   return json.data;
+}
+
+// Cybersecurity Labs API
+export async function fetchLabs(): Promise<Lab[]> {
+  const res = await fetch(`${API_BASE}/labs`);
+  if (!res.ok) {
+    throw new Error(`Failed to load labs: HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function fetchLab(id: string): Promise<Lab> {
+  const res = await fetch(`${API_BASE}/labs/${id}`);
+  if (!res.ok) {
+    throw new Error(`Failed to load lab '${id}': HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function fetchLabStatus(
+  id: string
+): Promise<{ status: Lab['status']; proved: boolean; targetOnline: boolean }> {
+  const res = await fetch(`${API_BASE}/labs/${id}/status`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch lab status for '${id}': HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function startLab(id: string): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/labs/${id}/start`, { method: 'POST' });
+  const json = await res.json();
+  return json;
+}
+
+export async function stopLab(id: string): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/labs/${id}/stop`, { method: 'POST' });
+  const json = await res.json();
+  return json;
+}
+
+export async function resetLab(id: string): Promise<{ ok: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/labs/${id}/reset`, { method: 'POST' });
+  const json = await res.json();
+  return json;
+}
+
+export async function validateLab(id: string): Promise<LabValidationResult> {
+  const res = await fetch(`${API_BASE}/labs/${id}/validate`, { method: 'POST' });
+  const json = await res.json();
+  return json;
 }

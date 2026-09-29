@@ -1,0 +1,57 @@
+id: 021-sql-injection-auth-bypass
+chapter: 02-ai-augmented-web-pentesting
+chapter_order: 2
+title: AI-assisted SQL injection auth bypass
+summary: |
+  Discover an authentication bypass SQL injection flaw in a local login portal.
+  Use an LLM to analyze the dynamic query structure, formulate a controlled test
+  payload, verify admin access in the local target, and compare against a secure
+  parameterized implementation.
+format: hands-on
+difficulty: 2
+estimated_time_minutes: 45
+prerequisites:
+  knowledge:
+    - "Basic HTTP POST requests and form data"
+    - "Fundamental SQL syntax (SELECT, WHERE, AND, OR, comments)"
+    - "Basic prompt engineering (system prompt and structured output)"
+  system:
+    - "Docker + docker compose"
+    - "A local web browser"
+  keys:
+    - "OPENAI_API_KEY, ANTHROPIC_API_KEY, or local Ollama install (optional for the helper)"
+learning_objectives:
+  - "Understand the mechanics of dynamic SQL query construction in authentication endpoints"
+  - "Detect SQL syntax sensitivity and database diagnostic feedback"
+  - "Use an LLM to reason about query logic manipulation and identify test payloads"
+  - "Safely demonstrate administrative authentication bypass in a controlled local target"
+  - "Understand how parameterized queries and prepared statements eliminate SQL injection"
+hints:
+  - id: h1
+    trigger: start
+    text: "First test a normal login using the authorized analyst credentials to observe standard behavior."
+  - id: h2
+    trigger: 2nd_failed_validate
+    text: "Notice what happens when you enter a single quote (') into the username field. Inspect the resulting diagnostic message."
+  - id: h3
+    trigger: 10m_idle
+    text: "In SQLite, the double dash (--) denotes a comment to the end of the line. Consider how admin' -- alters the WHERE clause."
+references:
+  - title: "PortSwigger Web Security Academy — SQL injection"
+    url: "https://portswigger.net/web-security/sql-injection"
+  - title: "OWASP SQL Injection Prevention Cheat Sheet"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+tags: ["web", "sqli", "sql-injection", "auth-bypass", "chapter-02"]
+environment:
+  compose: ./environment/docker-compose.yml
+  ready_check: "curl -fs http://host.docker.internal:9212/health && curl -fs http://host.docker.internal:9210/health && curl -fs http://host.docker.internal:9211/health"
+  reset_command: "docker compose -f ./environment/docker-compose.yml down -v"
+  resource_budget:
+    cpu: "1"
+    memory_mb: 1024
+success_criteria:
+  validate: ./validate.sh
+swap_in_exercise: |
+  Re-run the helper with a different provider or a local Ollama model. Compare
+  how it reasons about SQL comment syntax across SQL dialects and verify why
+  prepared statements eliminate the flaw entirely.

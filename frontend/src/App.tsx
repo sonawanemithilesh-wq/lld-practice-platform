@@ -4,20 +4,30 @@ import { Navbar } from './components/Navbar';
 import { CataloguePage } from './pages/CataloguePage';
 import { PracticePage } from './pages/PracticePage';
 import { FeedbackPage } from './pages/FeedbackPage';
+import { LabsPage } from './pages/LabsPage';
+import { LabWorkspacePage } from './pages/LabWorkspacePage';
 import {
   fetchProblems,
   fetchProblem,
   fetchProblemAttempts,
   submitSolution,
-  fetchSubmission
+  fetchSubmission,
+  fetchLabs,
+  fetchLab,
+  startLab,
+  stopLab,
+  resetLab,
+  validateLab
 } from './api/client';
-import { Problem, Submission, SubmissionFormat } from './types';
+import { Problem, Submission, SubmissionFormat, Lab, LabValidationResult } from './types';
 import { Loader2, X } from 'lucide-react';
 
 type ViewRoute =
   | { name: 'catalogue' }
   | { name: 'practice'; problemId: string }
-  | { name: 'feedback'; submissionId: string };
+  | { name: 'feedback'; submissionId: string }
+  | { name: 'labs' }
+  | { name: 'lab-workspace'; labId: string };
 
 export function App() {
   const [route, setRoute] = useState<ViewRoute>({ name: 'catalogue' });
@@ -42,9 +52,15 @@ export function App() {
   // Feedback state
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
 
+  // Cybersecurity Labs state
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [isLoadingLabs, setIsLoadingLabs] = useState(false);
+  const [currentLab, setCurrentLab] = useState<Lab | null>(null);
+
   // Initial load
   useEffect(() => {
     loadProblems();
+    loadLabsData();
 
     const handlePopState = () => {
       resolveRouteFromUrl();
@@ -71,6 +87,17 @@ export function App() {
         loadSubmissionData(submissionId);
         return;
       }
+    } else if (path.startsWith('/labs/')) {
+      const labId = path.replace('/labs/', '');
+      if (labId) {
+        setRoute({ name: 'lab-workspace', labId });
+        loadLabDetail(labId);
+        return;
+      }
+    } else if (path === '/labs') {
+      setRoute({ name: 'labs' });
+      loadLabsData();
+      return;
     }
     setRoute({ name: 'catalogue' });
   };
@@ -81,6 +108,10 @@ export function App() {
       url = `/practice/${newRoute.problemId}`;
     } else if (newRoute.name === 'feedback') {
       url = `/attempts/${newRoute.submissionId}`;
+    } else if (newRoute.name === 'labs') {
+      url = '/labs';
+    } else if (newRoute.name === 'lab-workspace') {
+      url = `/labs/${newRoute.labId}`;
     }
 
     if (window.location.pathname !== url) {
@@ -92,6 +123,71 @@ export function App() {
       loadProblemData(newRoute.problemId);
     } else if (newRoute.name === 'feedback') {
       loadSubmissionData(newRoute.submissionId);
+    } else if (newRoute.name === 'labs') {
+      loadLabsData();
+    } else if (newRoute.name === 'lab-workspace') {
+      loadLabDetail(newRoute.labId);
+    }
+  };
+
+  const loadLabsData = async () => {
+    try {
+      setIsLoadingLabs(true);
+      const data = await fetchLabs();
+      setLabs(data);
+    } catch (err) {
+      console.error('Failed to load labs:', err);
+    } finally {
+      setIsLoadingLabs(false);
+    }
+  };
+
+  const loadLabDetail = async (labId: string) => {
+    try {
+      const data = await fetchLab(labId);
+      setCurrentLab(data);
+    } catch (err) {
+      console.error(`Failed to load lab ${labId}:`, err);
+    }
+  };
+
+  const handleStartLab = async (labId: string) => {
+    await startLab(labId);
+    await loadLabsData();
+    if (currentLab?.id === labId) {
+      await loadLabDetail(labId);
+    }
+  };
+
+  const handleStopLab = async (labId: string) => {
+    await stopLab(labId);
+    await loadLabsData();
+    if (currentLab?.id === labId) {
+      await loadLabDetail(labId);
+    }
+  };
+
+  const handleResetLab = async (labId: string) => {
+    await resetLab(labId);
+    await loadLabsData();
+    if (currentLab?.id === labId) {
+      await loadLabDetail(labId);
+    }
+  };
+
+  const handleValidateLab = async (labId: string) => {
+    const res = await validateLab(labId);
+    await loadLabsData();
+    if (currentLab?.id === labId) {
+      await loadLabDetail(labId);
+    }
+    return res;
+  };
+
+  const handleRefreshLabStatus = async (labId: string) => {
+    if (currentLab?.id === labId) {
+      const data = await fetchLab(labId);
+      setCurrentLab(data);
     }
   };
 
@@ -172,13 +268,19 @@ export function App() {
             setEditorPrefill(null);
             navigateTo({ name: 'catalogue' });
           }}
+          onNavigateLabs={() => navigateTo({ name: 'labs' })}
           onOpenRubricModal={() => setShowRubricModal(true)}
           onOpenArchitectureModal={() => setShowArchitectureModal(true)}
           onOpenAttemptsModal={() => setShowAttemptsModal(true)}
           totalAttempts={totalAttempts}
           activeProblemTitle={
-            route.name === 'practice' && currentProblem ? currentProblem.title : undefined
+            route.name === 'practice' && currentProblem
+              ? currentProblem.title
+              : route.name === 'lab-workspace' && currentLab
+              ? currentLab.title
+              : undefined
           }
+          activeTab={route.name === 'labs' || route.name === 'lab-workspace' ? 'labs' : 'problems'}
         />
 
         <main className="flex-1">
@@ -190,7 +292,37 @@ export function App() {
                 setEditorPrefill(null);
                 navigateTo({ name: 'practice', problemId: idOrSlug });
               }}
+              onNavigateLabs={() => navigateTo({ name: 'labs' })}
             />
+          )}
+
+          {route.name === 'labs' && (
+            <LabsPage
+              labs={labs}
+              isLoading={isLoadingLabs}
+              onSelectLab={(id) => navigateTo({ name: 'lab-workspace', labId: id })}
+              onStartLab={handleStartLab}
+              onStopLab={handleStopLab}
+            />
+          )}
+
+          {route.name === 'lab-workspace' && currentLab && (
+            <LabWorkspacePage
+              lab={currentLab}
+              onBackToLabs={() => navigateTo({ name: 'labs' })}
+              onStartLab={handleStartLab}
+              onStopLab={handleStopLab}
+              onResetLab={handleResetLab}
+              onValidateLab={handleValidateLab}
+              onRefreshStatus={handleRefreshLabStatus}
+            />
+          )}
+
+          {route.name === 'lab-workspace' && !currentLab && (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] pt-32">
+              <Loader2 className="w-6 h-6 text-white animate-spin mb-3" />
+              <p className="text-xs font-mono text-zinc-400">CONNECTING TO LAB RUNTIME SPEC...</p>
+            </div>
           )}
 
           {route.name === 'practice' && currentProblem && (

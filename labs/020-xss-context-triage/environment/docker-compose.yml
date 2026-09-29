@@ -1,0 +1,77 @@
+name: dojo-web-020
+
+services:
+  readyz:
+    image: nginx:1.27-alpine
+    container_name: dojo-xss-readyz
+    ports:
+      - "9202:80"
+    volumes:
+      - ./readyz/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - target
+      - collector
+      - tools
+    networks:
+      - dojo-xss
+    restart: unless-stopped
+
+  target:
+    build:
+      context: ./target
+    container_name: dojo-xss-target
+    ports:
+      - "9200:8080"
+    networks:
+      dojo-xss:
+        ipv4_address: 10.43.0.10
+        aliases:
+          - target.dojo.local
+    restart: unless-stopped
+
+  collector:
+    build:
+      context: ./collector
+    container_name: dojo-xss-collector
+    ports:
+      - "9201:8081"
+    volumes:
+      - xss-proof-state:/data
+    networks:
+      dojo-xss:
+        ipv4_address: 10.43.0.11
+        aliases:
+          - collector.dojo.local
+    restart: unless-stopped
+
+  tools:
+    image: dojo-base-attacker:local
+    container_name: dojo-xss-tools
+    command: ["tail", "-f", "/dev/null"]
+    environment:
+      - DOJO_LAB=020-xss-context-triage
+      - DOJO_LLM=${DOJO_LLM:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    volumes:
+      - ../tools:/attacker/tools:ro
+      - ../output:/attacker/output:rw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      dojo-xss:
+        ipv4_address: 10.43.0.5
+        aliases:
+          - tools.dojo.local
+    restart: unless-stopped
+
+networks:
+  dojo-xss:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.43.0.0/24
+
+volumes:
+  xss-proof-state:

@@ -1,0 +1,55 @@
+id: 020-xss-context-triage
+chapter: 02-ai-augmented-web-pentesting
+chapter_order: 1
+title: AI-assisted XSS context triage
+summary: |
+  Find a reflected XSS flaw in a small local support-search application.
+  Use an LLM to classify the reflection context and critique a proof payload,
+  then trigger a harmless local collector to demonstrate browser execution.
+format: hands-on
+difficulty: 2
+estimated_time_minutes: 45
+prerequisites:
+  knowledge:
+    - "Basic HTTP requests and URL encoding"
+    - "Basic HTML: elements, attributes, and script execution"
+    - "Basic prompt engineering (system prompt and structured output)"
+  system:
+    - "Docker + docker compose"
+    - "A local web browser"
+  keys:
+    - "OPENAI_API_KEY, ANTHROPIC_API_KEY, or local Ollama install (optional for the helper)"
+learning_objectives:
+  - "Locate user-controlled input reflected in an HTTP response"
+  - "Classify the HTML context before selecting an XSS proof payload"
+  - "Use an LLM to critique payload assumptions instead of blindly copying a generic payload"
+  - "Demonstrate execution with a harmless, local-only proof collector"
+hints:
+  - id: h1
+    trigger: start
+    text: "First send a harmless marker such as DOJO_MARKER and inspect exactly where it appears in the response."
+  - id: h2
+    trigger: 2nd_failed_validate
+    text: "The vulnerable route is the search endpoint. The proof collector is available on localhost port 9201 from your browser."
+  - id: h3
+    trigger: 10m_idle
+    text: "A browser-execution proof can be a script that creates an Image whose src points at the local collector; it does not need to read data."
+references:
+  - title: "PortSwigger Web Security Academy — Cross-site scripting"
+    url: "https://portswigger.net/web-security/cross-site-scripting"
+  - title: "OWASP Cross Site Scripting Prevention Cheat Sheet"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+tags: ["web", "xss", "reflected-xss", "payload-crafting", "chapter-02"]
+environment:
+  compose: ./environment/docker-compose.yml
+  ready_check: "curl -fs http://host.docker.internal:9202/health && curl -fs http://host.docker.internal:9200/health && curl -fs http://host.docker.internal:9201/health"
+  reset_command: "docker compose -f ./environment/docker-compose.yml down -v"
+  resource_budget:
+    cpu: "1"
+    memory_mb: 1024
+success_criteria:
+  validate: ./validate.sh
+swap_in_exercise: |
+  Re-run the helper with a different provider or a local Ollama model. Compare
+  whether it correctly distinguishes HTML text context from an attribute or
+  JavaScript context, and keep only payloads you can explain and verify.

@@ -8,9 +8,10 @@ interface CataloguePageProps {
   problems: Problem[];
   isLoading: boolean;
   onSelectProblem: (problemIdOrSlug: string) => void;
+  onNavigateLabs?: () => void;
 }
 
-export function CataloguePage({ problems, isLoading, onSelectProblem }: CataloguePageProps) {
+export function CataloguePage({ problems, isLoading, onSelectProblem, onNavigateLabs }: CataloguePageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | Difficulty>('All');
@@ -19,7 +20,15 @@ export function CataloguePage({ problems, isLoading, onSelectProblem }: Catalogu
     'Choose a system design challenge. Structure your domain model, submit, and inspect trade-offs.';
   const { displayed, done } = useTypewriter(typewriterText, 28, 400);
 
-  const categories = ['All', 'State Machines', 'Strategy Algorithms', 'Concurrency', 'Resource Allocation'];
+  const categories = ['All', 'State Machines', 'Strategy Algorithms', 'Concurrency', 'Resource Allocation', 'Cybersecurity Labs'];
+
+  const handleCategoryClick = (cat: string) => {
+    if (cat === 'Cybersecurity Labs' && onNavigateLabs) {
+      onNavigateLabs();
+      return;
+    }
+    setSelectedCategory(cat);
+  };
 
   const filteredProblems = useMemo(() => {
     return problems.filter((problem) => {
@@ -31,7 +40,7 @@ export function CataloguePage({ problems, isLoading, onSelectProblem }: Catalogu
         selectedDifficulty === 'All' || problem.difficulty === selectedDifficulty;
 
       let matchesCategory = true;
-      if (selectedCategory !== 'All') {
+      if (selectedCategory !== 'All' && selectedCategory !== 'Cybersecurity Labs') {
         if (selectedCategory === 'State Machines') {
           matchesCategory = problem.slug === 'vending-machine';
         } else if (selectedCategory === 'Strategy Algorithms') {
@@ -79,10 +88,12 @@ export function CataloguePage({ problems, isLoading, onSelectProblem }: Catalogu
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => handleCategoryClick(cat)}
               className={`${
                 selectedCategory === cat
                   ? 'bg-white text-black'
+                  : cat === 'Cybersecurity Labs'
+                  ? 'bg-sky-950/40 text-sky-300 hover:bg-sky-400 hover:text-black border border-sky-500/30'
                   : 'bg-black text-white hover:bg-white hover:text-black border border-white/20'
               } rounded-full px-5 py-1.5 text-sm font-medium transition-colors`}
             >

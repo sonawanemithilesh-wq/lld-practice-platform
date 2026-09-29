@@ -3,20 +3,24 @@ import { Sparkles, X } from 'lucide-react';
 
 interface NavbarProps {
   onNavigateHome: () => void;
+  onNavigateLabs?: () => void;
   onOpenRubricModal: () => void;
   onOpenArchitectureModal: () => void;
   onOpenAttemptsModal?: () => void;
   totalAttempts?: number;
   activeProblemTitle?: string;
+  activeTab?: 'problems' | 'labs';
 }
 
 export function Navbar({
   onNavigateHome,
+  onNavigateLabs,
   onOpenRubricModal,
   onOpenArchitectureModal,
   onOpenAttemptsModal,
   totalAttempts = 0,
-  activeProblemTitle
+  activeProblemTitle,
+  activeTab = 'problems'
 }: NavbarProps) {
   const [isHealthOk, setIsHealthOk] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,9 +72,21 @@ export function Navbar({
         <nav className="hidden md:flex items-center space-x-1 text-white text-[16px] sm:text-[18px]">
           <button
             onClick={onNavigateHome}
-            className="hover:opacity-60 transition-opacity text-white focus:outline-none"
+            className={`hover:opacity-60 transition-opacity focus:outline-none ${
+              activeTab === 'problems' ? 'text-white font-semibold underline underline-offset-8' : 'text-zinc-300'
+            }`}
           >
             Problems
+          </button>
+          <span className="text-white/40 select-none">,</span>
+
+          <button
+            onClick={onNavigateLabs || onNavigateHome}
+            className={`hover:opacity-60 transition-opacity focus:outline-none pl-1.5 ${
+              activeTab === 'labs' ? 'text-white font-semibold underline underline-offset-8' : 'text-zinc-300'
+            }`}
+          >
+            Cybersecurity Labs
           </button>
           <span className="text-white/40 select-none">,</span>
 
@@ -79,7 +95,7 @@ export function Navbar({
               if (onOpenAttemptsModal) onOpenAttemptsModal();
               else onNavigateHome();
             }}
-            className="hover:opacity-60 transition-opacity text-white focus:outline-none pl-1.5"
+            className="hover:opacity-60 transition-opacity text-zinc-300 focus:outline-none pl-1.5"
           >
             Attempt History
           </button>
@@ -87,7 +103,7 @@ export function Navbar({
 
           <button
             onClick={onOpenArchitectureModal}
-            className="hover:opacity-60 transition-opacity text-white focus:outline-none pl-1.5"
+            className="hover:opacity-60 transition-opacity text-zinc-300 focus:outline-none pl-1.5"
           >
             System Architecture
           </button>
@@ -95,7 +111,7 @@ export function Navbar({
 
           <button
             onClick={onOpenRubricModal}
-            className="hover:opacity-60 transition-opacity text-white focus:outline-none pl-1.5"
+            className="hover:opacity-60 transition-opacity text-zinc-300 focus:outline-none pl-1.5"
           >
             Evaluation Rubric
           </button>
@@ -159,6 +175,16 @@ export function Navbar({
               className="text-left text-white hover:opacity-60 transition"
             >
               Problems
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                if (onNavigateLabs) onNavigateLabs();
+                else onNavigateHome();
+              }}
+              className="text-left text-white hover:opacity-60 transition"
+            >
+              Cybersecurity Labs
             </button>
             <button
               onClick={() => {
